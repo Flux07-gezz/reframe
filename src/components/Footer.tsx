@@ -11,7 +11,7 @@ export default function Footer() {
     <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
         
-        {/* Left Section: Brand */}
+        {/* Brand Section */}
         <div className="md:col-span-5 space-y-6">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight">
@@ -40,7 +40,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Middle Section: Navigation */}
+        {/* Links Section */}
         <div className="md:col-span-3 space-y-5">
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Navigation</h3>
           <nav className="flex flex-col gap-3 text-sm">
@@ -70,29 +70,27 @@ export default function Footer() {
         {/* Right Section: Newsletter & Community */}
         <div className="md:col-span-4 flex flex-col items-start md:items-end space-y-8">
           
-          {/* Newsletter Part */}
+          {/* Newsletter - Logic updated to pass Lint/Build checks */}
           <div className="w-full flex flex-col items-start md:items-end gap-3">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Updates</h3>
             
-            <div 
-              onClick={() => !isExpanded && setIsExpanded(true)}
-              className={`group flex items-center bg-[var(--surface)] border border-[var(--border)] rounded-lg transition-all duration-500 ease-in-out cursor-pointer overflow-hidden ${
-                isExpanded ? "w-full sm:w-72 px-4 border-blue-500/50" : "w-40 px-3 hover:bg-[var(--border)]"
-              }`}
-            >
-              {!isExpanded ? (
-                <div className="w-full py-3 flex items-center justify-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 group-hover:opacity-100 transition-opacity">
-                    Stay Tuned
-                  </span>
-                </div>
-              ) : (
+            {!isExpanded ? (
+              <button 
+                type="button"
+                onClick={() => setIsExpanded(true)}
+                className="w-40 px-3 flex items-center justify-center bg-[var(--surface)] border border-[var(--border)] rounded-lg py-3 hover:bg-[var(--border)] transition-all duration-500 ease-in-out group"
+              >
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 group-hover:opacity-100 transition-opacity">
+                  Stay Tuned
+                </span>
+              </button>
+            ) : (
+              <div className="w-full sm:w-72 px-4 flex items-center bg-[var(--surface)] border border-blue-500/50 rounded-lg transition-all duration-500 ease-in-out">
                 <form 
                   onSubmit={(e) => { e.preventDefault(); setIsExpanded(false); }} 
                   className="flex w-full items-center animate-in slide-in-from-right-2 duration-500"
                 >
                   <input 
-                    autoFocus
                     type="email" 
                     placeholder="ENTER EMAIL" 
                     className="bg-transparent border-none text-[10px] font-bold tracking-widest text-[var(--text)] focus:outline-none w-full py-3 placeholder:opacity-30"
@@ -102,11 +100,11 @@ export default function Footer() {
                     <ArrowRight size={16} />
                   </button>
                 </form>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          {/* Community Section - Heading and Link below it */}
+          {/* Community Section */}
           <div className="flex flex-col items-start md:items-end gap-3">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Community</h3>
             <a
