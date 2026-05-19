@@ -408,7 +408,6 @@ export default function VideoEditor() {
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] text-sm focus:outline-none focus:ring-1 focus:ring-film-500"
-              autoFocus
             />
             {saveError && <p className="text-xs text-red-500">{saveError}</p>}
             <div className="flex justify-end gap-2">
@@ -448,7 +447,7 @@ export default function VideoEditor() {
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 w-full max-w-md space-y-4 shadow-xl">
             <h2 className="font-heading font-bold uppercase tracking-widest text-sm text-[var(--text)]">Load project</h2>
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              ⚠️ Settings will be restored, but you'll need to re-select your video file.
+              ⚠️ Settings will be restored, but you&apos;ll need to re-select your video file.
             </div>
             {loadNotice && <p className="text-xs text-green-600">{loadNotice}</p>}
             {loadedProjects.length === 0 ? (
