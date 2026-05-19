@@ -1,8 +1,7 @@
 "use client";
 
-
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useVideoEditor } from "@/hooks/useVideoEditor";
+import { useVideoEditor, VideoProject } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -15,11 +14,12 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
-import ImageOverlay from "./ImageOverlay"
+import ImageOverlay from "./ImageOverlay";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github
+  SlidersHorizontal, Zap, AlertTriangle,
+  Save, FolderOpen, Trash2
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 
@@ -50,18 +50,25 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
 
 export default function VideoEditor() {
   const {
-   file, duration, recipe, status, progress,
+    file, duration, recipe, status, progress,
     result, error, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
-    videoRef,
-    seekTo,
+    videoRef, seekTo,
     overlayFile, setOverlayFile,
     overlayPosition, setOverlayPosition,
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
     recommendedPreset,
+    saveProject, listProjects, loadProject, deleteProject,
   } = useVideoEditor();
+
   const [copied, setCopied] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [loadedProjects, setLoadedProjects] = useState<ReturnType<typeof listProjects>>([]);
+  const [loadNotice, setLoadNotice] = useState("");
   const downloadRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -122,10 +129,10 @@ export default function VideoEditor() {
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
-              <div className="text-center text-[var(--muted)] py-6">
-                <p>Upload a video to get started</p>
-                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
-              </div>
+                <div className="text-center text-[var(--muted)] py-6">
+                  <p>Upload a video to get started</p>
+                  <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+                </div>
               )}
 
               {file && (
@@ -151,6 +158,7 @@ export default function VideoEditor() {
                 ⚠️ Large file - processing may take several minutes
               </p>
             )}
+
             {file && (
               <div className={cn(
                 "grid grid-cols-1 sm:grid-cols-2 gap-4",
@@ -172,11 +180,7 @@ export default function VideoEditor() {
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
-                  <Section
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Adjustments"
-                    delay={175}
-                  >
+                  <Section icon={<SlidersHorizontal size={12} />} title="Adjustments" delay={175}>
                     <div className="space-y-5">
                       {/* Brightness */}
                       <div className="space-y-2">
@@ -336,7 +340,31 @@ export default function VideoEditor() {
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
 
-              <div className="pt-2 flex justify-end">
+              <div className="pt-2 flex items-center justify-between gap-2">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProjectName("");
+                      setSaveError("");
+                      setShowSaveModal(true);
+                    }}
+                    className="flex items-center gap-1.5 text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                  >
+                    <Save size={13} /> Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoadedProjects(listProjects());
+                      setLoadNotice("");
+                      setShowLoadModal(true);
+                    }}
+                    className="flex items-center gap-1.5 text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                  >
+                    <FolderOpen size={13} /> Load
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={resetSettings}
@@ -352,7 +380,7 @@ export default function VideoEditor() {
               type="button"
               onClick={handleExport}
               disabled={!file || isProcessing}
-              aria-label='Export video'
+              aria-label="Export video"
               aria-disabled={!file || isProcessing ? "true" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 rounded-xl",
@@ -368,6 +396,111 @@ export default function VideoEditor() {
           </div>
         </div>
       </div>
+
+      {/* Save Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 w-full max-w-sm space-y-4 shadow-xl">
+            <h2 className="font-heading font-bold uppercase tracking-widest text-sm text-[var(--text)]">Save project</h2>
+            <input
+              type="text"
+              placeholder="Project name"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] text-sm focus:outline-none focus:ring-1 focus:ring-film-500"
+              autoFocus
+            />
+            {saveError && <p className="text-xs text-red-500">{saveError}</p>}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowSaveModal(false)}
+                className="px-4 py-2 text-sm font-heading uppercase tracking-widest text-[var(--muted)] hover:opacity-80"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!projectName.trim()) {
+                    setSaveError("Please enter a project name.");
+                    return;
+                  }
+                  const ok = saveProject(projectName.trim());
+                  if (ok) {
+                    setShowSaveModal(false);
+                  } else {
+                    setSaveError("Failed to save. Storage may be full.");
+                  }
+                }}
+                className="px-4 py-2 text-sm font-heading font-bold uppercase tracking-widest bg-film-600 text-white rounded-lg hover:bg-film-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load Modal */}
+      {showLoadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 w-full max-w-md space-y-4 shadow-xl">
+            <h2 className="font-heading font-bold uppercase tracking-widest text-sm text-[var(--text)]">Load project</h2>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              ⚠️ Settings will be restored, but you'll need to re-select your video file.
+            </div>
+            {loadNotice && <p className="text-xs text-green-600">{loadNotice}</p>}
+            {loadedProjects.length === 0 ? (
+              <p className="text-sm text-[var(--muted)]">No saved projects yet.</p>
+            ) : (
+              <ul className="space-y-2 max-h-64 overflow-y-auto">
+                {loadedProjects.map((p: VideoProject) => (
+                  <li key={p.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[var(--text)] truncate">{p.name}</p>
+                      <p className="text-xs text-[var(--muted)]">{new Date(p.savedAt).toLocaleString()}</p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          loadProject(p.id);
+                          setLoadNotice(`"${p.name}" loaded.`);
+                          setTimeout(() => setShowLoadModal(false), 800);
+                        }}
+                        className="px-3 py-1 text-xs font-heading font-bold uppercase tracking-widest bg-film-600 text-white rounded-lg hover:bg-film-700"
+                      >
+                        Load
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteProject(p.id);
+                          setLoadedProjects(listProjects());
+                        }}
+                        aria-label="Delete project"
+                        className="p-1 text-[var(--muted)] hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowLoadModal(false)}
+                className="px-4 py-2 text-sm font-heading uppercase tracking-widest text-[var(--muted)] hover:opacity-80"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
