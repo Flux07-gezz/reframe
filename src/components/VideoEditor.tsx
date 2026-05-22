@@ -207,7 +207,7 @@ export default function VideoEditor() {
                     <ThumbnailStrip
                       videoSrc={videoSrc}
                       duration={duration}
-                      currentTime={videoRef.current?.currentTime ?? 0}
+                      currentTime={currentTime}
                       trimStart={recipe.trimStart ?? 0}
                       trimEnd={recipe.trimEnd ?? duration}
                       onSeek={seekTo}

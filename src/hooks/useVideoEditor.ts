@@ -379,6 +379,13 @@ export function useVideoEditor() {
       videoRef.current.currentTime = time;
     }
   }, []);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+  });
 
   const getAllProjects = useCallback((): Record<string, VideoProject> => {
     if (typeof window === "undefined") return {};
