@@ -87,9 +87,6 @@ export function useVideoEditor() {
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [currentTime, setCurrentTime] = useState(0);
-  const [soundOnCompletion, setSoundOnCompletion] = useState(true);
-
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
   const [originalAudioVolume, setOriginalAudioVolume] = useState(40);
@@ -99,6 +96,9 @@ export function useVideoEditor() {
   const [overlayPosition, setOverlayPosition] = useState<"bottom-right" | "top-right" | "top-left" | "bottom-left">("bottom-right");
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
+
+  const [currentTime, setCurrentTime] = useState(0);
+  const [soundOnCompletion, setSoundOnCompletion] = useState(true);
 
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => {
@@ -490,4 +490,5 @@ export function useVideoEditor() {
     toggleSound,
     recommendedPreset: null
   };
+
 }
