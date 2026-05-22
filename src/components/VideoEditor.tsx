@@ -71,7 +71,7 @@ export default function VideoEditor() {
     overlaySize,
     setOverlaySize,
     overlayOpacity,
-    setOverlayOpacity,
+    currentTime,
     recommendedPreset,
   } = useVideoEditor();
 
@@ -81,6 +81,7 @@ export default function VideoEditor() {
   const [activeModal, setActiveModal] = useState<"save" | "load" | null>(null);
   const [projectName, setProjectName] = useState("");
   const [savedProjects, setSavedProjects] = useState<ReturnType<typeof listProjects>>([]);
+
   const [soundOnCompletion, setSoundOnCompletion] = useState(true);
   const handleToggleSound = () => setSoundOnCompletion((prev) => !prev);
 
@@ -189,7 +190,8 @@ export default function VideoEditor() {
 
           <div className="space-y-4">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
-            <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+
               {!file && (
                 <div className="text-center text-[var(--muted)] py-6">
                   <p>Upload a video to get started</p>
@@ -226,9 +228,9 @@ export default function VideoEditor() {
                 isProcessing && "pointer-events-none opacity-50"
               )}>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                <Section icon={<Scissors size={12} />} title="Trim" delay={50}>
-                  <TrimControl recipe={recipe} onChange={updateRecipe} duration={duration} file={file} />
-                </Section>
+                  <Section icon={<Scissors size={12} />} title="Trim" delay={50}>
+                    <TrimControl recipe={recipe} onChange={updateRecipe} duration={duration} file={file} />
+                  </Section>
                   <Section icon={<RotateCw size={12} />} title="Rotate" delay={100}>
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
                   </Section>

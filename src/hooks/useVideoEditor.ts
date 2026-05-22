@@ -7,6 +7,7 @@ import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 const LOCAL_STORAGE_KEY = 'reframe-projects-v1';
+const STORAGE_KEY = 'reframe-current-recipe-v1';
 
 export interface VideoProject {
   id: string;
@@ -69,6 +70,10 @@ function verifyMagicBytes(file: File): Promise<boolean> {
   });
 }
 
+function isValidRecipe(obj: any): obj is EditRecipe {
+  return obj && typeof obj === "object" && "preset" in obj && "format" in obj;
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -82,6 +87,9 @@ export function useVideoEditor() {
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Added from upstream main branch
+  const [currentTime, setCurrentTime] = useState(0);
+
   // Background audio music track states from upstream main branch
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
@@ -94,8 +102,95 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
 
+  // Unified recipe updater with GIF specific rules
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-    setRecipe((prev) => ({ ...prev, ...patch }));
+    setRecipe((prev) => {
+      const next = { ...prev, ...patch };
+      if (next.format === "gif") {
+        next.keepAudio = false;
+      }
+      return next;
+    });
+  }, []);
+
+  const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
+    switch (key) {
+      case "preset": return typeof val === "string";
+      case "customWidth": return typeof val === "number" && !isNaN(val) && val >= 16 && val <= 7680;
+      case "customHeight": return typeof val === "number" && !isNaN(val) && val >= 16 && val <= 7680;
+      case "framing": return val === "fit" || val === "fill";
+      case "trimStart": return typeof val === "number" && !isNaN(val) && val >= 0;
+      case "trimEnd": return val === null || (typeof val === "number" && !isNaN(val) && val >= 0);
+      case "rotate": return val === 0 || val === 90 || val === 180 || val === 270;
+      case "speed": return typeof val === "number" && !isNaN(val) && [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4].includes(val);
+      case "quality": return typeof val === "number" && !isNaN(val) && val >= 18 && val <= 30;
+      case "format": return val === "mp4" || val === "webm" || val === "mkv" || val === "gif";
+      case "brightness": return typeof val === "number" && !isNaN(val) && val >= -1 && val <= 1;
+      case "contrast": return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 2;
+      case "saturation": return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 3;
+      default: return true;
+    }
+  };
+
+  // Upstream URL Search Param Synchronization Lifecycle
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
+      const hasRecipeParams = recipeKeys.some(key => params.has(key));
+
+      if (hasRecipeParams) {
+        const updatedPatch: Partial<EditRecipe> = {};
+        recipeKeys.forEach((key) => {
+          const paramVal = params.get(key);
+          if (paramVal !== null) {
+            const defaultType = typeof DEFAULT_RECIPE[key];
+            let parsedVal: any;
+
+            if (defaultType === "number") {
+              parsedVal = parseFloat(paramVal);
+            } else if (defaultType === "boolean") {
+              parsedVal = paramVal === "true";
+            } else {
+              parsedVal = paramVal === "null" ? null : paramVal;
+            }
+
+            if (isValidValue(key, parsedVal)) {
+              (updatedPatch as any)[key] = parsedVal;
+            }
+          }
+        });
+
+        if (Object.keys(updatedPatch).length > 0) {
+          setRecipe(prev => ({ ...prev, ...updatedPatch }));
+        }
+      } else {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (isValidRecipe(parsed)) {
+              setRecipe(parsed);
+              return;
+            }
+          }
+        } catch {}
+
+        const saved = localStorage.getItem("reframe-settings");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setRecipe(prev => ({
+            ...prev,
+            preset: parsed.preset ?? prev.preset,
+            quality: parsed.quality ?? prev.quality,
+            speed: parsed.speed ?? prev.speed,
+            customWidth: parsed.customWidth ?? prev.customWidth,
+            customHeight: parsed.customHeight ?? prev.customHeight
+          }));
+        }
+      }
+    } catch (e) {}
   }, []);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
@@ -151,9 +246,7 @@ export function useVideoEditor() {
 
   const handleExport = useCallback(async () => {
     if (!file) return;
-    if (status === "loading-engine" || status === "exporting") {
-      return;
-    }
+    if (status === "loading-engine" || status === "exporting") return;
 
     const abortController = new AbortController();
     exportAbortControllerRef.current = abortController;
@@ -392,6 +485,7 @@ export function useVideoEditor() {
     setOverlaySize,
     overlayOpacity,
     setOverlayOpacity,
+    currentTime,
     recommendedPreset: null
   };
 }
