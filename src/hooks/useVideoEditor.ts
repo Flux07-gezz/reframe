@@ -87,8 +87,9 @@ export function useVideoEditor() {
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Added from upstream main branch
+  // Core configuration states from upstream main branch (image_4e212c.png)
   const [currentTime, setCurrentTime] = useState(0);
+  const [soundOnCompletion, setSoundOnCompletion] = useState(true);
 
   // Background audio music track states from upstream main branch
   const [musicFile, setMusicFile] = useState<File | null>(null);
@@ -102,7 +103,7 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
 
-  // Unified recipe updater with GIF specific rules
+  // Unified recipe updater with GIF specific audio suppression rules
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => {
       const next = { ...prev, ...patch };
@@ -111,6 +112,10 @@ export function useVideoEditor() {
       }
       return next;
     });
+  }, []);
+
+  const toggleSound = useCallback(() => {
+    setSoundOnCompletion((prev) => !prev);
   }, []);
 
   const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
@@ -132,7 +137,6 @@ export function useVideoEditor() {
     }
   };
 
-  // Upstream URL Search Param Synchronization Lifecycle
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -486,6 +490,8 @@ export function useVideoEditor() {
     overlayOpacity,
     setOverlayOpacity,
     currentTime,
+    soundOnCompletion,
+    toggleSound,
     recommendedPreset: null
   };
 }

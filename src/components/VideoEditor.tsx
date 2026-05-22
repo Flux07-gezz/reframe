@@ -71,7 +71,10 @@ export default function VideoEditor() {
     overlaySize,
     setOverlaySize,
     overlayOpacity,
+    setOverlayOpacity,
     currentTime,
+    soundOnCompletion,
+    toggleSound,
     recommendedPreset,
   } = useVideoEditor();
 
@@ -81,9 +84,6 @@ export default function VideoEditor() {
   const [activeModal, setActiveModal] = useState<"save" | "load" | null>(null);
   const [projectName, setProjectName] = useState("");
   const [savedProjects, setSavedProjects] = useState<ReturnType<typeof listProjects>>([]);
-
-  const [soundOnCompletion, setSoundOnCompletion] = useState(true);
-  const handleToggleSound = () => setSoundOnCompletion((prev) => !prev);
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
@@ -368,7 +368,7 @@ export default function VideoEditor() {
                   result={result} 
                   onReset={reset} 
                   soundOnCompletion={soundOnCompletion} 
-                  onToggleSound={handleToggleSound} 
+                  onToggleSound={toggleSound} 
                 />
               </div>
             )}
