@@ -87,23 +87,19 @@ export function useVideoEditor() {
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Core configuration states from upstream main branch (image_4e212c.png)
   const [currentTime, setCurrentTime] = useState(0);
   const [soundOnCompletion, setSoundOnCompletion] = useState(true);
 
-  // Background audio music track states from upstream main branch
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
   const [originalAudioVolume, setOriginalAudioVolume] = useState(40);
   const [loopMusic, setLoopMusic] = useState(false);
 
-  // Overlay states from upstream main branch
   const [overlayFile, setOverlayFile] = useState<File | null>(null);
   const [overlayPosition, setOverlayPosition] = useState<"bottom-right" | "top-right" | "top-left" | "bottom-left">("bottom-right");
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
 
-  // Unified recipe updater with GIF specific audio suppression rules
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => {
       const next = { ...prev, ...patch };
